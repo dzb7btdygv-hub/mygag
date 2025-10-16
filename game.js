@@ -43,11 +43,13 @@ let tabsInitialized = false;
 async function saveGameData() {
   if (!currentUser) return;
   try {
-    await setDoc(doc(db, "users", currentUser.uid), {
+    const docRef = doc(db, "users", currentUser.uid);
+    const payload = {
       coins,
-      inventory,
+      inventory: inventory.map(p => ({ ...p })),
       lastSaved: new Date().toISOString()
-    });
+    };
+    await setDoc(docRef, payload, { merge: true });
     console.log("💾 Cloud save complete for", currentUser.email);
   } catch (err) {
     console.error("❌ Error saving data:", err);
@@ -60,8 +62,9 @@ async function loadGameData() {
     const snap = await getDoc(doc(db, "users", currentUser.uid));
     if (snap.exists()) {
       const data = snap.data();
-      coins = data.coins ?? 500;
-      inventory = data.inventory ?? [];
+      coins = Number.isFinite(data.coins) ? data.coins : 500;
+      coinsDisplay = coins;
+      inventory = Array.isArray(data.inventory) ? data.inventory.slice() : [];
       console.log("✅ Cloud data loaded:", data);
     } else {
       console.log("ℹ️ No cloud save found; using defaults");
@@ -226,10 +229,14 @@ function setupTabs() {
 
     const activeBtn = tabButtons.find(btn => btn.dataset.tab === tabName);
     if (!activeBtn) return;
-    const width = activeBtn.offsetWidth;
-    const offset = activeBtn.offsetLeft;
-    indicator.style.width = `${width}px`;
-    indicator.style.transform = `translateX(${offset}px)`;
+    const rect = activeBtn.getBoundingClientRect();
+    const barRect = bar.getBoundingClientRect();
+    const offsetRaw = rect.left - barRect.left;
+    const fullWidth = rect.width;
+    const gutter = 4;
+    const indicatorWidth = Math.max(0, fullWidth - gutter * 2);
+    indicator.style.width = `${indicatorWidth}px`;
+    indicator.style.transform = `translateX(${offsetRaw + gutter}px)`;
     indicator.style.opacity = "1";
   };
 
@@ -347,7 +354,8 @@ function renderInventory(){
     const rcol=rarityColors[pet.rarity];
     if(rcol){
       row.style.borderColor=rcol;
-      row.style.background=`${rcol}30`;
+      row.style.background=hexToRgba(rcol,0.18);
+      row.style.color=pickTextColor(rcol);
     }
     row.innerHTML=`
       <div class="inv-item">
@@ -381,17 +389,228 @@ async function openEgg(eggName){
   if(!egg)return;
   if(egg.price>coins){toast("Not enough coins");return;}
   setCoins(coins-egg.price);
-  const pet=weightedPick(egg.pets);
-  inventory.unshift(pet);
+  const pet=await animateCaseOpening(egg);
+  inventory.unshift({ ...pet });
   renderInventory();
   toast(`You hatched: ${pet.rarity} ${pet.name}!`);
-  saveGameData();
+  await saveGameData();
 }
 
 function weightedPick(pool){
   const r=Math.random();let acc=0;
   for(const p of pool){acc+=p.chance;if(r<=acc)return p;}
   return pool[pool.length-1];
+}
+
+function hexToRgba(hex, alpha = 1) {
+  if (!hex) return `rgba(0,0,0,${alpha})`;
+  let h = hex.replace("#", "");
+  if (h.length === 3) h = h.split("").map(c => c + c).join("");
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function pickTextColor(hex) {
+  if (!hex) return "#ffffff";
+  let h = hex.replace("#", "");
+  if (h.length === 3) h = h.split("").map(c => c + c).join("");
+  const r = parseInt(h.slice(0, 2), 16) / 255;
+  const g = parseInt(h.slice(2, 4), 16) / 255;
+  const b = parseInt(h.slice(4, 6), 16) / 255;
+  const f = v => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+  const L = 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+  return L > 0.6 ? "#0b0015" : "#ffffff";
+}
+
+function formatChance(c) {
+  if (c == null || isNaN(c)) return "-";
+  const pct = c * 100;
+  if (pct >= 1) return pct.toFixed(2);
+  if (pct >= 0.1) return pct.toFixed(3);
+  return pct.toFixed(4);
+}
+
+function showOverlay() {
+  const overlay = document.getElementById("caseOpening");
+  const btn = document.getElementById("closeCase");
+  const resultEl = document.getElementById("caseResult");
+  const strip = document.getElementById("caseStrip");
+
+  if (!overlay) return;
+  if (resultEl) resultEl.textContent = "";
+  if (strip) {
+    strip.querySelectorAll(".is-winning").forEach(node => node.classList.remove("is-winning"));
+    strip.style.transition = "none";
+    strip.style.transform = "translateX(0px)";
+  }
+  if (btn) {
+    btn.disabled = true;
+    btn.onclick = null;
+  }
+  overlay.classList.add("is-active");
+  overlay.setAttribute("aria-hidden", "false");
+}
+
+function hideOverlay() {
+  const overlay = document.getElementById("caseOpening");
+  if (!overlay) return;
+  overlay.classList.remove("is-active");
+  overlay.setAttribute("aria-hidden", "true");
+}
+
+async function animateCaseOpening(egg) {
+  const overlay = document.getElementById("caseOpening");
+  const strip = document.getElementById("caseStrip");
+  const track = document.getElementById("caseTrack");
+  const closeBtn = document.getElementById("closeCase");
+  const resultEl = document.getElementById("caseResult");
+
+  if (!overlay || !strip || !track || !closeBtn) {
+    return weightedPick(egg.pets);
+  }
+
+  showOverlay();
+  strip.innerHTML = "";
+  strip.style.transition = "none";
+  strip.style.transform = "translateX(0px)";
+
+  const resultPet = weightedPick(egg.pets);
+  const repeated = [];
+  const leadCycles = 32;
+  for (let i = 0; i < leadCycles; i++) repeated.push(...egg.pets);
+  const resultIndex = repeated.length;
+  repeated.push(resultPet);
+  const tailCycles = 12;
+  for (let i = 0; i < tailCycles; i++) repeated.push(...egg.pets);
+
+  repeated.forEach(p => {
+    const cell = document.createElement("div");
+    cell.className = "case-card";
+    const rcol = rarityColors[p.rarity];
+    if (rcol) {
+      cell.style.background = rcol;
+      cell.style.borderColor = rcol;
+      cell.style.color = pickTextColor(rcol);
+    }
+
+    const img = document.createElement("img");
+    img.src = p.image;
+    img.alt = p.name;
+
+    const label = document.createElement("div");
+    label.textContent = p.name;
+    label.style.webkitTextStroke = "1px #000";
+    label.style.textShadow = "0 1px 2px #000, 1px 0 2px #000, 0 -1px 2px #000, -1px 0 2px #000";
+
+    cell.appendChild(img);
+    cell.appendChild(label);
+    strip.appendChild(cell);
+  });
+
+  await new Promise(resolve => requestAnimationFrame(resolve));
+
+  const pointerOffset = track.clientWidth / 2;
+  const padLeft = parseFloat(getComputedStyle(strip).paddingLeft) || 0;
+  const firstCell = strip.children[0];
+  let cellWidth = 0;
+
+  if (firstCell) {
+    const a = firstCell.getBoundingClientRect();
+    const b = strip.children[1]?.getBoundingClientRect();
+    cellWidth = b ? b.left - a.left : a.width;
+  }
+  if (!cellWidth) cellWidth = 134;
+
+  const targetOffset = padLeft + resultIndex * cellWidth + cellWidth / 2 - pointerOffset;
+  const distance = Math.max(targetOffset, 0);
+  const duration = 4300;
+
+  await new Promise(resolve => {
+    if (distance <= 0) {
+      strip.style.transform = "translateX(0px)";
+      setTimeout(resolve, 80);
+      return;
+    }
+    let settled = false;
+    const cleanup = () => {
+      if (settled) return;
+      settled = true;
+      strip.style.transition = "none";
+      resolve();
+    };
+    const fallback = setTimeout(cleanup, duration + 120);
+    strip.addEventListener(
+      "transitionend",
+      () => {
+        clearTimeout(fallback);
+        cleanup();
+      },
+      { once: true }
+    );
+    requestAnimationFrame(() => {
+      void strip.offsetWidth;
+      strip.style.transition = `transform ${duration}ms cubic-bezier(0.18, 0.86, 0.32, 1)`;
+      strip.style.transform = `translateX(${-distance}px)`;
+    });
+  });
+
+  const winningCard = strip.children[resultIndex];
+  if (winningCard) winningCard.classList.add("is-winning");
+
+  if (resultEl) {
+    const color = rarityColors[resultPet.rarity] || "#fff";
+    resultEl.innerHTML = `<span style="color:${color}; text-shadow:0 0 12px ${color}66;">You got: ${resultPet.rarity} ${resultPet.name}</span>`;
+  }
+
+  await new Promise(resolve => {
+    closeBtn.disabled = false;
+    closeBtn.onclick = () => resolve();
+  });
+
+  hideOverlay();
+  return resultPet;
+}
+
+function showEggInfo(eggName) {
+  const egg = eggsData?.[eggName];
+  const ov = document.getElementById("eggInfoOverlay");
+  const list = document.getElementById("eggInfoList");
+  const nameEl = document.getElementById("eggInfoName");
+  const imgEl = document.getElementById("eggInfoImage");
+  if (!egg || !ov || !list || !nameEl || !imgEl) return;
+
+  nameEl.textContent = eggName;
+  imgEl.src = egg.image;
+  imgEl.alt = eggName;
+  list.innerHTML = "";
+  egg.pets.forEach(p => {
+    const rcolor = rarityColors[p.rarity] || "#fff";
+    const row = document.createElement("div");
+    row.className = "egginfo-row";
+    row.innerHTML = `
+      <img src="${p.image}" alt="${p.name}">
+      <div>
+        <div class="egginfo-name">${p.name}</div>
+        <div class="egginfo-rarity" style="color:${rcolor}">${p.rarity}</div>
+      </div>
+      <div class="egginfo-value">Value: ${p.value}</div>
+      <div class="egginfo-chance" style="color:${rcolor}">${formatChance(p.chance)}%</div>
+    `;
+    list.appendChild(row);
+  });
+  ov.classList.add("is-active");
+  ov.setAttribute("aria-hidden", "false");
+  const closeBtn = document.getElementById("eggInfoClose");
+  const close = () => {
+    ov.classList.remove("is-active");
+    ov.setAttribute("aria-hidden", "true");
+  };
+  if (closeBtn) closeBtn.onclick = close;
+  ov.onclick = e => {
+    if (!e.target.closest(".egginfo-dialog")) close();
+  };
 }
 
 async function start(){
@@ -418,16 +637,27 @@ async function start(){
 function renderEggShop(){
   const wrap=elEggs();
   wrap.innerHTML="";
-  Object.entries(eggsData).forEach(([name,egg])=>{
+  Object.entries(eggsData).forEach(([name,egg],index)=>{
     const card=document.createElement("div");
     card.className="card";
+    card.style.animationDelay=`${index*0.1}s`;
     card.innerHTML=`
       <img src="${egg.image}" alt="${name}">
       <div><strong>${name}</strong></div>
       <div class="price">${egg.price===0?"Free":egg.price+" coins"}</div>
       <button class="btn" data-egg="${name}">Open Egg</button>`;
     wrap.appendChild(card);
-    card.querySelector("button").addEventListener("click",()=>openEgg(name));
+    const btn=card.querySelector("button[data-egg]");
+    if(btn){
+      btn.addEventListener("click",e=>{
+        e.stopPropagation();
+        openEgg(name);
+      });
+    }
+    card.addEventListener("click",e=>{
+      if(e.target.closest("button[data-egg]"))return;
+      showEggInfo(name);
+    });
   });
 }
 
