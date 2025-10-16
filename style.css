@@ -423,13 +423,14 @@ header h1 {
   position: absolute;
   top: 6px;
   bottom: 6px;
-  left: 12px;
-  width: 80px;
+  left: 0;
+  width: 0;
   border-radius: var(--radius-pill);
   background: linear-gradient(135deg, var(--accent), var(--accent-strong));
   box-shadow: 0 8px 24px rgba(124,58,237,0.35);
-  transition: transform 0.35s ease, width 0.35s ease;
+  transition: transform 0.3s ease, width 0.3s ease;
   transform: translateX(0);
+  opacity: 0;
   z-index: 0;
 }
 .tab-btn { position: relative; z-index: 1; }

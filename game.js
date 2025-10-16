@@ -37,6 +37,7 @@ let coinsDisplay = coins;
 let inventory = [];
 let eggsData = null;
 let coinAnimFrame = null;
+let tabsInitialized = false;
 
 // === SAVE / LOAD ===
 async function saveGameData() {
@@ -199,6 +200,64 @@ function showLoadingScreen() {
   }
 }
 
+function setupTabs() {
+  if (tabsInitialized) return;
+  tabsInitialized = true;
+
+  const tabButtons = Array.from(document.querySelectorAll(".tab-btn"));
+  const panels = Array.from(document.querySelectorAll("[data-tab-panel]"));
+  const indicator = document.getElementById("tabIndicator");
+  const bar = document.querySelector(".tab-bar");
+
+  if (!tabButtons.length || !panels.length || !indicator || !bar) return;
+
+  const activate = tabName => {
+    tabButtons.forEach(btn => {
+      const isActive = btn.dataset.tab === tabName;
+      btn.classList.toggle("is-active", isActive);
+      btn.setAttribute("aria-selected", String(isActive));
+    });
+
+    panels.forEach(panel => {
+      const isActive = panel.dataset.tabPanel === tabName;
+      panel.classList.toggle("is-active", isActive);
+      panel.setAttribute("aria-hidden", isActive ? "false" : "true");
+    });
+
+    const activeBtn = tabButtons.find(btn => btn.dataset.tab === tabName);
+    if (!activeBtn) return;
+    const width = activeBtn.offsetWidth;
+    const offset = activeBtn.offsetLeft;
+    indicator.style.width = `${width}px`;
+    indicator.style.transform = `translateX(${offset}px)`;
+    indicator.style.opacity = "1";
+  };
+
+  tabButtons.forEach(btn => {
+    btn.addEventListener("click", () => activate(btn.dataset.tab));
+  });
+
+  document.querySelectorAll("[data-nav-tab]").forEach(trigger => {
+    trigger.addEventListener("click", evt => {
+      evt.preventDefault();
+      activate(trigger.dataset.navTab);
+    });
+  });
+
+  const initial =
+    tabButtons.find(btn => btn.classList.contains("is-active"))?.dataset.tab ||
+    tabButtons[0]?.dataset.tab;
+  if (initial) {
+    requestAnimationFrame(() => activate(initial));
+  }
+
+  window.addEventListener("resize", () => {
+    const current =
+      tabButtons.find(btn => btn.classList.contains("is-active"))?.dataset.tab;
+    if (current) activate(current);
+  });
+}
+
 // === SETTINGS DROPDOWN ===
 function setupSettingsDropdown() {
   const settingsBtn = document.getElementById("settingsBtn");
@@ -351,6 +410,7 @@ async function start(){
   renderInventory();
   renderEggShop();
   setupSettingsDropdown();
+  setupTabs();
   const loading=document.getElementById("loadingScreen");
   setTimeout(()=>{loading.classList.add("fade-out");setTimeout(()=>loading.style.display="none",600)},1500);
 }
@@ -374,4 +434,5 @@ function renderEggShop(){
 // === STARTUP ===
 window.addEventListener("DOMContentLoaded",()=>{
   setupLoginSystem();
+  setupTabs();
 });
