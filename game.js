@@ -1,18 +1,18 @@
 // === FIREBASE INITIALIZATION ===
-import { initializeApp } from "firebase/app";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import {
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged
-} from "firebase/auth";
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import {
   getFirestore,
   doc,
   setDoc,
   getDoc
-} from "firebase/firestore";
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
 // --- Firebase Config ---
 const firebaseConfig = {

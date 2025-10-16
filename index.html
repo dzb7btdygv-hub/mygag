@@ -8,10 +8,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700;900&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="style.css" />
-<!-- Import Firebase SDKs -->
-<script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js"></script>
-<script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js"></script>
-<script type="module" src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js"></script>
 <script type="module" src="game.js"></script>
 </head>
 <body>
@@ -24,8 +20,8 @@
     </div>
     
     <div class="login-tabs">
-      <button class="login-tab active" data-login-tab="signin">Sign In</button>
-      <button class="login-tab" data-login-tab="signup">Sign Up</button>
+      <button type="button" class="login-tab active" data-login-tab="signin">Sign In</button>
+      <button type="button" class="login-tab" data-login-tab="signup">Sign Up</button>
     </div>
     
     <!-- Sign In Form -->
