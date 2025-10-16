@@ -1,0 +1,32 @@
+{
+  "Common Egg": {
+    "price": 0,
+    "image": "assets/eggs/CommonEgg.webp",
+    "pets": [
+      { "name": "Bunny", "rarity": "Common", "chance": 0.4, "value": 10, "image": "assets/pets/BunnyPet.webp" },
+      { "name": "Dog", "rarity": "Common", "chance": 0.4, "value": 12, "image": "assets/pets/DogPet.webp" },
+      { "name": "Golden Lab", "rarity": "Common", "chance": 0.2, "value": 8, "image": "assets/pets/GoldenLabPet.webp" }
+    ]
+  },
+  "Uncommon Egg": {
+    "price": 150,
+    "image": "assets/eggs/UncommonEgg.webp",
+    "pets": [
+      { "name": "Black Bunny", "rarity": "Uncommon", "chance": 0.35, "value": 60, "image": "assets/pets/BlackBunny.webp" },
+      { "name": "Chicken", "rarity": "Uncommon", "chance": 0.30, "value": 90, "image": "assets/pets/ChickenPet.webp" },
+      { "name": "Cat", "rarity": "Uncommon", "chance": 0.25, "value": 120, "image": "assets/pets/CatPet.webp" },
+      { "name": "Deer", "rarity": "Rare", "chance": 0.10, "value": 300, "image": "assets/pets/DeerPet.webp" }
+    ]
+  },
+    "Rare Egg": {
+    "price": 600,
+    "image": "assets/eggs/RareEgg.webp",
+    "pets": [
+      { "name": "Orange Tabby", "rarity": "Rare", "chance": 0.33, "value": 150, "image": "assets/pets/Rare/OrangeTabby.webp" },
+      { "name": "Spotted Deer", "rarity": "Rare", "chance": 0.25, "value": 320, "image": "assets/pets/Rare/SpottedDeer.webp" },
+      { "name": "Pig", "rarity": "Rare", "chance": 0.16, "value": 500, "image": "assets/pets/Rare/Pig.webp" },
+      { "name": "Rooster", "rarity": "Rare", "chance": 0.16, "value": 500, "image": "assets/pets/Rare/Rooster.webp" },
+      { "name": "Monkey", "rarity": "Rare", "chance": 0.08, "value": 950, "image": "assets/pets/Rare/Monkey.webp" }
+    ]
+  }
+}

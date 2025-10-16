@@ -1,0 +1,213 @@
+/* === ADMIN PANEL STYLES === */
+
+.admin-panel {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 20, 25, 0.95);
+  backdrop-filter: blur(10px);
+  z-index: 9999;
+  display: none;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+  overflow-y: auto;
+  padding: 40px 20px;
+  animation: fadeIn 0.25s ease;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 800px;
+  margin-bottom: 20px;
+}
+
+.admin-header h2 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.admin-header .btn {
+  font-size: 0.9rem;
+  padding: 8px 14px;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+.admin-tab {
+  background: #2a2d3a;
+  border: 1px solid #44485c;
+  border-radius: 8px;
+  color: #ccc;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+
+.admin-tab.active {
+  background: #4a8ef5;
+  border-color: #4a8ef5;
+  color: #fff;
+  box-shadow: 0 0 8px #4a8ef566;
+}
+
+.admin-tab:hover {
+  background: #3b3f50;
+}
+
+.admin-content {
+  width: 100%;
+  max-width: 800px;
+  background: #1e202b;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 0 12px #0006;
+}
+
+.admin-tab-content {
+  display: none;
+}
+
+.admin-tab-content.active {
+  display: block;
+  animation: fadeIn 0.2s ease-in;
+}
+
+.admin-tab-content h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 15px;
+  color: #fff;
+}
+
+.admin-tab-content select,
+.admin-tab-content input {
+  background: #2a2d3a;
+  border: 1px solid #555;
+  color: #eee;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 6px 8px 10px 0;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.admin-tab-content select:focus,
+.admin-tab-content input:focus {
+  border-color: #4a8ef5;
+}
+
+.admin-tab-content button.btn {
+  padding: 8px 14px;
+  margin: 6px 5px 12px 0;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.admin-tab-content .btn {
+  background: #4a8ef5;
+  color: #fff;
+}
+
+.admin-tab-content .btn:hover {
+  background: #66a5ff;
+}
+
+.admin-tab-content .btn-secondary {
+  background: #444;
+  color: #eee;
+}
+
+.admin-tab-content .btn-secondary:hover {
+  background: #555;
+}
+
+#currentLuckDisplay {
+  font-weight: 700;
+  color: #ffc84a;
+}
+
+/* === BANNED USERS LIST === */
+
+#bannedUsersList {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.banned-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: #2a2d3a;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #444;
+}
+
+.banned-info strong {
+  font-size: 1rem;
+  color: #fff;
+}
+
+.banned-info {
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+.banned-empty {
+  text-align: center;
+  color: #aaa;
+  font-size: 0.95rem;
+}
+
+.unban-btn {
+  background: #f44336;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.unban-btn:hover {
+  background: #ff6b6b;
+}
+
+/* === REUSABLES === */
+
+.btn {
+  font-family: 'Montserrat', sans-serif;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Prevent admin panel from being blocked by dropdown */
+#settingsDropdown {
+  z-index: 1000;
+}
+
+.admin-panel {
+  z-index: 2000;
+}

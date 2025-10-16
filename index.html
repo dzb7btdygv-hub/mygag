@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Grow a Garden RNG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+<script src="game.js" defer></script>
+</head>
+<body>
+<!-- Login Screen -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-container">
+    <div class="login-header">
+      <h1>Grow a Garden RNG</h1>
+      <p>Sign in to save your progress</p>
+    </div>
+    
+    <div class="login-tabs">
+      <button class="login-tab active" data-login-tab="signin">Sign In</button>
+      <button class="login-tab" data-login-tab="signup">Sign Up</button>
+    </div>
+    
+    <!-- Sign In Form -->
+    <form id="signinForm" class="login-form active">
+      <div class="form-group">
+        <label for="signinUsername">Username</label>
+        <input type="text" id="signinUsername" required autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label for="signinPassword">Password</label>
+        <input type="password" id="signinPassword" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-login">Sign In</button>
+      <div id="signinError" class="login-error"></div>
+    </form>
+    
+    <!-- Sign Up Form -->
+    <form id="signupForm" class="login-form">
+      <div class="form-group">
+        <label for="signupUsername">Username</label>
+        <input type="text" id="signupUsername" required autocomplete="username" minlength="3">
+      </div>
+      <div class="form-group">
+        <label for="signupPassword">Password</label>
+        <input type="password" id="signupPassword" required autocomplete="new-password" minlength="4">
+      </div>
+      <div class="form-group">
+        <label for="signupPasswordConfirm">Confirm Password</label>
+        <input type="password" id="signupPasswordConfirm" required autocomplete="new-password" minlength="4">
+      </div>
+      <label class="auth-check" style="margin-top:8px;">
+        <input id="signupAdminCheckbox" type="checkbox" /> Add administrator to this account
+      </label>
+      <button type="submit" class="btn btn-login">Create Account</button>
+      <div id="signupError" class="login-error"></div>
+    </form>
+    
+    <div class="login-footer">
+      <p>Progress saves automatically in your browser</p>
+    </div>
+  </div>
+</div>
+
+<div id="loadingScreen" class="loading-screen">
+  <div class="loading-content">
+    <div class="loading-logo">
+      <h1>Grow a Garden RNG</h1>
+      <div class="loading-subtitle">Preparing your garden...</div>
+    </div>
+    <div class="loading-bar-container">
+      <div class="loading-bar"></div>
+    </div>
+    <div class="loading-spinner"></div>
+  </div>
+</div>
+
+<header>
+<div class="header-top">
+<h1>Grow a Garden RNG</h1>
+<div class="header-right">
+  <div class="coins">Coins: <span id="coins">0</span></div>
+  <div class="settings-container">
+    <button class="settings-btn" id="settingsBtn" aria-label="Settings">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m-2 2l-4.2 4.2M23 12h-6m-6 0H5m13.2 5.2l-4.2-4.2m-2-2l-4.2-4.2"></path>
+      </svg>
+    </button>
+    <div class="settings-dropdown" id="settingsDropdown">
+      <div class="settings-header">
+        <div class="settings-user">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          <span id="settingsUsername">User</span>
+        </div>
+      </div>
+      <div class="settings-divider"></div>
+      <button class="settings-item" id="logoutBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        <span>Log Out</span>
+      </button>
+    </div>
+  </div>
+</div>
+</div>
+    <nav class="tab-bar" role="tablist" aria-label="Main navigation">
+      <span id="tabIndicator" class="tab-indicator" aria-hidden="true"></span>
+      <button class="tab-btn is-active" role="tab" aria-selected="true" data-tab="home">Home</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="shop">Shop</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="inventory">Inventory</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="settings">Settings</button>
+    </nav>
+  </header>
+<main>
+<section class="panel tab-panel is-active" data-tab-panel="home" aria-hidden="false">
+<div class="hero">
+<h2>Build Your Dream Garden</h2>
+<p class="hero-copy">
+ Dive into the shop to crack open glowing eggs, hatch rare companions, and flip your discoveries for profit.
+ Open the tabs above to jump into the shop or review your collection.
+</p>
+<div class="hero-actions">
+<button class="btn" data-nav-tab="shop">Open the Shop</button>
+<button class="btn btn-secondary" data-nav-tab="inventory">View Inventory</button>
+</div>
+</div>
+</section>
+<section class="panel tab-panel" data-tab-panel="shop" aria-hidden="true">
+<h2>Egg Shop</h2>
+<div id="eggs" class="eggs"></div>
+</section>
+    <section class="panel tab-panel" data-tab-panel="inventory" aria-hidden="true">
+      <h2>Inventory</h2>
+      <div id="inventory" class="inventory"></div>
+    </section>
+
+    
+
+    <section class="panel tab-panel" data-tab-panel="settings" aria-hidden="true">
+      <h2>Settings</h2>
+      <div class="settings-grid">
+        <div class="settings-card">
+          <h3>Account</h3>
+          <div class="row"><span>User:</span> <strong id="accountUser">Guest</strong></div>
+          <div class="row"><span>Role:</span> <strong id="accountRole">Player</strong></div>
+          <div class="row">
+            <button class="btn btn-sm" id="logoutBtn2">Log out</button>
+          </div>
+        </div>
+
+        <div class="settings-card admin-only" id="adminPanel" style="display:none;">
+          <h3>Admin</h3>
+          <div class="row">
+            <label for="adminCoins">Coins</label>
+            <input id="adminCoins" type="number" min="0" step="1" />
+            <button class="btn btn-sm" id="adminApplyCoins">Apply</button>
+          </div>
+          <div class="row">
+            <label for="adminEggSelect">Egg</label>
+            <select id="adminEggSelect"></select>
+          </div>
+          <div class="row">
+            <label for="adminPetSelect">Pet</label>
+            <select id="adminPetSelect"></select>
+          </div>
+          <div class="row">
+            <label for="adminChanceInput">Chance</label>
+            <input id="adminChanceInput" type="number" min="0" max="1" step="0.0001" />
+            <button class="btn btn-sm" id="adminSaveChance">Save Chance</button>
+          </div>
+          <div class="row">
+            <button class="btn btn-sm" id="adminGivePet">Give Selected Pet</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <div id="toast" class="toast"></div>
+
+  <!-- Egg Info overlay -->
+  <div id="eggInfoOverlay" class="case-overlay" aria-hidden="true">
+    <div class="egginfo-dialog">
+      <div class="egginfo-header">
+        <div class="egginfo-title">
+          <img id="eggInfoImage" alt="Egg" />
+          <h3 id="eggInfoName">Egg</h3>
+        </div>
+        <button id="eggInfoClose" class="btn btn-sm">Close</button>
+      </div>
+      <div id="eggInfoList" class="egginfo-list"></div>
+    </div>
+  </div>
+
+  <!-- Mutation confirm overlay -->
+  <div id="mutateConfirm" class="case-overlay" aria-hidden="true">
+    <div class="dialog-card">
+      <h3 class="dialog-title">Mutate Pet</h3>
+      <div class="dialog-body">
+        <div id="mutatePromptText" class="rarity">Are you sure you want to mutate <span id="mutatePetName"></span> for <strong id="mutateCost">100,000</strong> coins?</div>
+      </div>
+      <div class="dialog-buttons">
+        <button id="mutateNo" class="btn btn-secondary">No</button>
+        <button id="mutateChancesBtn" class="btn btn-alt">Chances</button>
+        <button id="mutateYes" class="btn">Yes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mutation chances overlay -->
+  <div id="mutateChances" class="case-overlay" aria-hidden="true">
+    <div class="egginfo-dialog">
+      <div class="egginfo-header">
+        <div class="egginfo-title">
+          <h3>Mutation Chances</h3>
+        </div>
+        <button id="mutateChancesClose" class="btn btn-sm">Close</button>
+      </div>
+      <div id="mutateChancesList" class="egginfo-list"></div>
+    </div>
+  </div>
+
+  <div id="caseOpening" class="case-overlay" aria-hidden="true">
+<div id="caseTrack" class="case-track">
+<div id="caseStrip" class="case-strip"></div>
+<div class="case-pointer"></div>
+</div>
+<h2 id="caseResult"></h2>
+<button id="closeCase" class="btn">Continue</button>
+</div>
+
+</body>
+</html>
