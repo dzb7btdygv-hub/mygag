@@ -39,6 +39,18 @@ let eggsData = null;
 let coinAnimFrame = null;
 let tabsInitialized = false;
 
+// === ADMIN UI TOGGLE ===
+function updateAdminUI() {
+  const adminBox = document.getElementById("adminPanel");
+  if (!adminBox) return;
+  if (currentUser?.isAdmin) {
+    adminBox.style.display = "block";
+    console.log("🛠️ Admin privileges detected for:", currentUser.email);
+  } else {
+    adminBox.style.display = "none";
+  }
+}
+
 // === SAVE / LOAD ===
 async function saveGameData() {
   if (!currentUser) return;
@@ -47,7 +59,8 @@ async function saveGameData() {
     const payload = {
       coins,
       inventory: inventory.map(p => ({ ...p })),
-      lastSaved: new Date().toISOString()
+      lastSaved: new Date().toISOString(),
+      isAdmin: !!currentUser.isAdmin // keep admin flag if already set
     };
     await setDoc(docRef, payload, { merge: true });
     console.log("💾 Cloud save complete for", currentUser.email);
@@ -65,7 +78,9 @@ async function loadGameData() {
       coins = Number.isFinite(data.coins) ? data.coins : 500;
       coinsDisplay = coins;
       inventory = Array.isArray(data.inventory) ? data.inventory.slice() : [];
+      currentUser.isAdmin = data.isAdmin === true;
       console.log("✅ Cloud data loaded:", data);
+      updateAdminUI();
     } else {
       console.log("ℹ️ No cloud save found; using defaults");
     }
@@ -117,6 +132,7 @@ function setupLoginSystem() {
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       currentUser = cred.user;
+      currentUser.isAdmin = false;
       console.log("✅ Registered:", email);
       await saveGameData();
       hideLoginScreen();
@@ -138,7 +154,6 @@ function setupLoginSystem() {
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
       currentUser = cred.user;
-      console.log("✅ Logged in:", email);
       await loadGameData();
       hideLoginScreen();
       showLoadingScreen();
@@ -154,7 +169,6 @@ function setupLoginSystem() {
 onAuthStateChanged(auth, async user => {
   if (user) {
     currentUser = user;
-    console.log("✅ Auth active:", user.email);
     await loadGameData();
     hideLoginScreen();
     showLoadingScreen();
@@ -162,6 +176,7 @@ onAuthStateChanged(auth, async user => {
   } else {
     currentUser = null;
     showLoginScreen();
+    updateAdminUI();
   }
 });
 
@@ -174,6 +189,7 @@ async function logout() {
   showLoginScreen();
   const loadingScreen = document.getElementById("loadingScreen");
   if (loadingScreen) loadingScreen.style.display = "none";
+  updateAdminUI();
 }
 
 // === UI HELPERS ===
@@ -231,12 +247,10 @@ function setupTabs() {
     if (!activeBtn) return;
     const rect = activeBtn.getBoundingClientRect();
     const barRect = bar.getBoundingClientRect();
-    const offsetRaw = rect.left - barRect.left;
-    const fullWidth = rect.width;
-    const gutter = 4;
-    const indicatorWidth = Math.max(0, fullWidth - gutter * 2);
-    indicator.style.width = `${indicatorWidth}px`;
-    indicator.style.transform = `translateX(${offsetRaw + gutter}px)`;
+    const width = rect.width;
+    const offset = rect.left - barRect.left;
+    indicator.style.width = `${width}px`;
+    indicator.style.transform = `translateX(${offset}px)`;
     indicator.style.opacity = "1";
   };
 
@@ -279,6 +293,8 @@ function setupSettingsDropdown() {
     accUser.textContent = currentUser.email;
   }
 
+  updateAdminUI();
+
   const toggle = e => {
     e.stopPropagation();
     dropdown.classList.toggle("show");
@@ -294,7 +310,6 @@ function setupSettingsDropdown() {
 }
 
 // === GAME LOGIC ===
-// (Everything below remains the same from your original version)
 const rarityColors = {
   Common: "#9aa0a6",
   Uncommon: "#6cc070",
@@ -304,6 +319,9 @@ const rarityColors = {
   Divine: "#ff6aa6", 
   Prismatic: "#c70000ff"
 };
+
+// (all your gameplay functions follow unchanged)
+
 
 function easeOutCubic(t){return 1-Math.pow(1-t,3)}
 function elCoins(){return document.getElementById("coins")}
@@ -354,8 +372,7 @@ function renderInventory(){
     const rcol=rarityColors[pet.rarity];
     if(rcol){
       row.style.borderColor=rcol;
-      row.style.background=hexToRgba(rcol,0.18);
-      row.style.color=pickTextColor(rcol);
+      row.style.background=`${rcol}30`;
     }
     row.innerHTML=`
       <div class="inv-item">
@@ -637,27 +654,16 @@ async function start(){
 function renderEggShop(){
   const wrap=elEggs();
   wrap.innerHTML="";
-  Object.entries(eggsData).forEach(([name,egg],index)=>{
+  Object.entries(eggsData).forEach(([name,egg])=>{
     const card=document.createElement("div");
     card.className="card";
-    card.style.animationDelay=`${index*0.1}s`;
     card.innerHTML=`
       <img src="${egg.image}" alt="${name}">
       <div><strong>${name}</strong></div>
       <div class="price">${egg.price===0?"Free":egg.price+" coins"}</div>
       <button class="btn" data-egg="${name}">Open Egg</button>`;
     wrap.appendChild(card);
-    const btn=card.querySelector("button[data-egg]");
-    if(btn){
-      btn.addEventListener("click",e=>{
-        e.stopPropagation();
-        openEgg(name);
-      });
-    }
-    card.addEventListener("click",e=>{
-      if(e.target.closest("button[data-egg]"))return;
-      showEggInfo(name);
-    });
+    card.querySelector("button").addEventListener("click",()=>openEgg(name));
   });
 }
 
