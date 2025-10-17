@@ -38,6 +38,8 @@ let inventory = [];
 let eggsData = null;
 let coinAnimFrame = null;
 let tabsInitialized = false;
+let adminEventsBound = false;
+let adminToastShown = false;
 
 // === ADMIN UI TOGGLE ===
 function updateAdminUI() {
@@ -46,8 +48,16 @@ function updateAdminUI() {
   if (currentUser?.isAdmin) {
     adminBox.style.display = "block";
     console.log("🛠️ Admin privileges detected for:", currentUser.email);
+    if (!adminToastShown) {
+      try { toast("Welcome, Admin!"); } catch (_) {}
+      adminToastShown = true;
+    }
+    const coinsInput = document.getElementById("adminCoins");
+    if (coinsInput && document.activeElement !== coinsInput) coinsInput.value = coins;
+    setupAdminPanel();
   } else {
     adminBox.style.display = "none";
+    adminToastShown = false;
   }
 }
 
@@ -186,6 +196,7 @@ async function logout() {
   if (currentUser) await saveGameData();
   await signOut(auth);
   currentUser = null;
+  adminToastShown = false;
   showLoginScreen();
   const loadingScreen = document.getElementById("loadingScreen");
   if (loadingScreen) loadingScreen.style.display = "none";
@@ -225,10 +236,8 @@ function setupTabs() {
 
   const tabButtons = Array.from(document.querySelectorAll(".tab-btn"));
   const panels = Array.from(document.querySelectorAll("[data-tab-panel]"));
-  const indicator = document.getElementById("tabIndicator");
-  const bar = document.querySelector(".tab-bar");
 
-  if (!tabButtons.length || !panels.length || !indicator || !bar) return;
+  if (!tabButtons.length || !panels.length) return;
 
   const activate = tabName => {
     tabButtons.forEach(btn => {
@@ -242,16 +251,6 @@ function setupTabs() {
       panel.classList.toggle("is-active", isActive);
       panel.setAttribute("aria-hidden", isActive ? "false" : "true");
     });
-
-    const activeBtn = tabButtons.find(btn => btn.dataset.tab === tabName);
-    if (!activeBtn) return;
-    const rect = activeBtn.getBoundingClientRect();
-    const barRect = bar.getBoundingClientRect();
-    const width = rect.width;
-    const offset = rect.left - barRect.left;
-    indicator.style.width = `${width}px`;
-    indicator.style.transform = `translateX(${offset}px)`;
-    indicator.style.opacity = "1";
   };
 
   tabButtons.forEach(btn => {
@@ -271,12 +270,6 @@ function setupTabs() {
   if (initial) {
     requestAnimationFrame(() => activate(initial));
   }
-
-  window.addEventListener("resize", () => {
-    const current =
-      tabButtons.find(btn => btn.classList.contains("is-active"))?.dataset.tab;
-    if (current) activate(current);
-  });
 }
 
 // === SETTINGS DROPDOWN ===
@@ -338,6 +331,10 @@ function setCoins(v){
   if(diff===0){
     coinsDisplay=target;
     elCoins().textContent=coinsDisplay.toLocaleString();
+    if(currentUser?.isAdmin){
+      const adminCoins=document.getElementById("adminCoins");
+      if(adminCoins && document.activeElement!==adminCoins) adminCoins.value=coins;
+    }
     return;
   }
   const dur=520;
@@ -347,6 +344,10 @@ function setCoins(v){
     const eased=easeOutCubic(prog);
     coinsDisplay=Math.round(start+diff*eased);
     elCoins().textContent=coinsDisplay.toLocaleString();
+    if(currentUser?.isAdmin){
+      const adminCoins=document.getElementById("adminCoins");
+      if(adminCoins && document.activeElement!==adminCoins) adminCoins.value=coins;
+    }
     if(prog<1){coinAnimFrame=requestAnimationFrame(step);}
   }
   coinAnimFrame=requestAnimationFrame(step);
@@ -357,6 +358,135 @@ function toast(msg){
   t.textContent=msg;
   t.classList.add("show");
   setTimeout(()=>t.classList.remove("show"),2000);
+}
+
+function setupAdminPanel(){
+  const adminBox=document.getElementById("adminPanel");
+  if(!adminBox) return;
+  if(!currentUser?.isAdmin){
+    adminBox.style.display="none";
+    return;
+  }
+
+  const coinsInput=document.getElementById("adminCoins");
+  const applyCoins=document.getElementById("adminApplyCoins");
+  const eggSelect=document.getElementById("adminEggSelect");
+  const petSelect=document.getElementById("adminPetSelect");
+  const chanceInput=document.getElementById("adminChanceInput");
+  const saveChance=document.getElementById("adminSaveChance");
+  const givePet=document.getElementById("adminGivePet");
+
+  if(!coinsInput || !applyCoins || !eggSelect || !petSelect || !chanceInput || !saveChance || !givePet) return;
+
+  adminBox.style.display="block";
+  if(document.activeElement!==coinsInput) coinsInput.value=coins;
+
+  const updateChanceField=()=>{
+    const egg=eggsData?.[eggSelect.value];
+    const pet=egg?.pets.find(p=>p.name===petSelect.value);
+    chanceInput.value=pet?.chance ?? 0;
+  };
+
+  const populatePets=()=>{
+    const egg=eggsData?.[eggSelect.value];
+    petSelect.innerHTML="";
+    if(!egg){
+      chanceInput.value="";
+      return;
+    }
+    egg.pets.forEach(p=>{
+      const opt=document.createElement("option");
+      opt.value=p.name;
+      opt.textContent=`${p.name} (${p.rarity})`;
+      petSelect.appendChild(opt);
+    });
+    if(!egg.pets.find(p=>p.name===petSelect.value) && egg.pets[0]){
+      petSelect.value=egg.pets[0].name;
+    }
+    updateChanceField();
+  };
+
+  const populateEggs=()=>{
+    if(!eggsData) return;
+    const currentValue=eggSelect.value;
+    eggSelect.innerHTML="";
+    Object.keys(eggsData).forEach(name=>{
+      const opt=document.createElement("option");
+      opt.value=name;
+      opt.textContent=name;
+      eggSelect.appendChild(opt);
+    });
+    if(currentValue && eggsData[currentValue]){
+      eggSelect.value=currentValue;
+    }
+    populatePets();
+  };
+
+  if(!adminEventsBound){
+    adminEventsBound=true;
+
+    applyCoins.addEventListener("click",()=>{
+      const next=parseInt(coinsInput.value,10);
+      if(!Number.isFinite(next) || next<0){
+        toast("Enter a valid coin amount");
+        coinsInput.value=coins;
+        return;
+      }
+      setCoins(next);
+      saveGameData();
+      toast("Coins updated");
+    });
+
+    eggSelect.addEventListener("change",()=>{
+      populatePets();
+    });
+
+    petSelect.addEventListener("change",()=>{
+      updateChanceField();
+    });
+
+    saveChance.addEventListener("click",()=>{
+      const egg=eggsData?.[eggSelect.value];
+      if(!egg) return;
+      const pet=egg.pets.find(p=>p.name===petSelect.value);
+      if(!pet) return;
+      let newChance=parseFloat(chanceInput.value);
+      if(!Number.isFinite(newChance) || newChance<0) newChance=0;
+      if(newChance>1) newChance=1;
+      const others=egg.pets.filter(p=>p!==pet);
+      const othersSum=others.reduce((acc,p)=>acc+(p.chance||0),0);
+      const remaining=Math.max(1-newChance,0);
+      if(others.length){
+        if(othersSum>0){
+          others.forEach(p=>{
+            const ratio=(p.chance||0)/othersSum;
+            p.chance=remaining*ratio;
+          });
+        }else{
+          const even=remaining/others.length;
+          others.forEach(p=>p.chance=even);
+        }
+      }
+      pet.chance=newChance;
+      updateChanceField();
+      toast("Chances updated");
+    });
+
+    givePet.addEventListener("click",()=>{
+      const egg=eggsData?.[eggSelect.value];
+      const pet=egg?.pets.find(p=>p.name===petSelect.value);
+      if(!pet){
+        toast("Select a valid pet");
+        return;
+      }
+      inventory.unshift({...pet});
+      renderInventory();
+      saveGameData();
+      toast(`Granted ${pet.name}`);
+    });
+  }
+
+  populateEggs();
 }
 
 function renderInventory(){
@@ -372,7 +502,8 @@ function renderInventory(){
     const rcol=rarityColors[pet.rarity];
     if(rcol){
       row.style.borderColor=rcol;
-      row.style.background=`${rcol}30`;
+      row.style.background=hexToRgba(rcol,0.18);
+      row.style.color=pickTextColor(rcol);
     }
     row.innerHTML=`
       <div class="inv-item">
@@ -518,8 +649,10 @@ async function animateCaseOpening(egg) {
 
     const label = document.createElement("div");
     label.textContent = p.name;
-    label.style.webkitTextStroke = "1px #000";
-    label.style.textShadow = "0 1px 2px #000, 1px 0 2px #000, 0 -1px 2px #000, -1px 0 2px #000";
+    label.style.color = "#fff";
+    label.style.fontWeight = "800";
+    label.style.webkitTextStroke = "0.5px rgba(12,12,20,0.75)";
+    label.style.textShadow = "0 2px 4px rgba(12, 12, 20, 0.6)";
 
     cell.appendChild(img);
     cell.appendChild(label);
