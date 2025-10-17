@@ -786,18 +786,37 @@ async function start(){
 
 function renderEggShop(){
   const wrap=elEggs();
+  if(!wrap) return;
   wrap.innerHTML="";
-  Object.entries(eggsData).forEach(([name,egg])=>{
+  Object.entries(eggsData).forEach(([name,egg],index)=>{
     const card=document.createElement("div");
     card.className="card";
+    card.dataset.eggCard=name;
+    card.style.animationDelay=`${index*0.1}s`;
     card.innerHTML=`
       <img src="${egg.image}" alt="${name}">
       <div><strong>${name}</strong></div>
       <div class="price">${egg.price===0?"Free":egg.price+" coins"}</div>
       <button class="btn" data-egg="${name}">Open Egg</button>`;
     wrap.appendChild(card);
-    card.querySelector("button").addEventListener("click",()=>openEgg(name));
+    const btn=card.querySelector("button[data-egg]");
+    if(btn){
+      btn.addEventListener("click",e=>{
+        e.stopPropagation();
+        openEgg(name);
+      });
+    }
   });
+
+  if(!wrap.dataset.boundInfo){
+    wrap.addEventListener("click",e=>{
+      if(e.target.closest("button[data-egg]")) return;
+      const card=e.target.closest(".card[data-egg-card]");
+      if(!card) return;
+      showEggInfo(card.dataset.eggCard);
+    });
+    wrap.dataset.boundInfo="1";
+  }
 }
 
 // === STARTUP ===
